@@ -103,8 +103,8 @@ jobs:
       scriptLocation: 'inlineScript'
       inlineScript: |
         echo "hello world"
-        #subid=$(az deployment tenant create --name "deploy-${{ variables.SubscriptionName }}" --location ${{ variables.Location }} --template-file infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.bicep --parameters @infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.parameters.example.json --parameters parSubscriptionBillingScope=${{ secrets.ALZ_AZURE_SECRET_EA_BILLING_ACCOUNT }} parSubscriptionName=${{ variables.SubscriptionName }} | jq .properties.outputs.outSubscriptionId.value)
-        #echo "SUBIDOUTPUT=$subid" >> $GITHUB_ENV
+
+        
   
   # - task: AzureCLI@2    
   #   displayName: Az CLI Refresh subscription list
