@@ -1,0 +1,45 @@
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - master
+  paths:
+    include:
+      - "**.bicep"
+
+variables:
+  ResourceGroupName: "rsg-github-pr-$(System.PullRequest.PullRequestId)"
+  ManagementGroupPrefix: "PR-$(System.PullRequest.PullRequestId)"
+  TopLevelManagementGroupDisplayName: "PR $(System.PullRequest.PullRequestId) Azure Landing Zones"
+  SubscriptionName: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
+  Location: "eastus"
+
+jobs:
+- job: bicep_unit_tests
+  displayName: Test Bicep Files for PR
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  # - task: PublishPipelineArtifact@1
+  #   displayName: Publish Azure Artifact
+  #   inputs:
+  #     targetPath: '$(System.DefaultWorkingDirectory)'
+  #     artifactName: AlzBicep
+  # - download: current
+  #     artifact: AlzBicep
+  - task: PowerShell@2
+    inputs: |
+      Get-ChildItem -Recurse -Filter '*.bicep' -Exclude 'callModuleFromACR.example.bicep','orch-hubSpoke.bicep' | ForEach-Object {
+        Write-Information "==> Attempting Bicep Build For File: $_" -InformationAction Continue
+          $output = bicep build $_.FullName 2>&1
+            if ($LastExitCode -ne 0)
+              {
+                throw $output
+              }
+            Else
+              {
+                echo $output
+              }   
+            }
+
