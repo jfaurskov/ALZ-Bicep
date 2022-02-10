@@ -22,18 +22,12 @@ jobs:
   pool:
     vmImage: ubuntu-latest
   steps:
-  # - task: PublishPipelineArtifact@1
-  #   displayName: Publish Azure Artifact
-  #   inputs:
-  #     targetPath: '$(System.DefaultWorkingDirectory)'
-  #     artifactName: AlzBicep
-  # - download: current
-  #     artifact: AlzBicep
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
-    inputs:
-      targetType: 'inline'
-      script: |
+  inputs:
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
         Get-ChildItem -Recurse -Filter '*.bicep' -Exclude 'callModuleFromACR.example.bicep','orch-hubSpoke.bicep' | ForEach-Object {
           Write-Information "==> Attempting Bicep Build For File: $_" -InformationAction Continue
             $output = bicep build $_.FullName 2>&1
@@ -52,52 +46,168 @@ jobs:
   pool:
     vmImage: ubuntu-latest
   steps:
-    #environment: BicepUnitTests
-    # outputs:
-    #   isDeployed: $(${{ env.gitLoggingOUTPUT != ''  }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }} || ${{ steps.git_management_diff.outputs.diff != '' != ''  }})
-    #   subscriptionID: ${{ env.SUBIDOUTPUT }}
-      # - name: Checkout Repo
-      #   uses: actions/checkout@v2
-      #   with:
-      #     fetch-depth: 0
-
-      # - name: Azure Login
-      #   uses: azure/login@v1
-      #   with:
-      #     creds: ${{ secrets.ALZ_AZURE_SECRET_UNIT_TESTS }}
-      #     enable-AzPSSession: true
   - task: Bash@3
     displayName: Check for managementGroup Changes
     name: git_management_diff
+  inputs:
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+        git_diff1=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/managementGroups/managementGroups.bicep)
+        git_diff2=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep)
+        git_diff3=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep)
+        git_diff4=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep)
+        git_diff5=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep)
+        git_diff6=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep)
+        if [[ $git_diff1 != '' ]] || [[ $git_diff2 != '' ]] || [[ $git_diff3 != '' ]] || [[ $git_diff4 != '' ]] || [[ $git_diff5 != '' ]] || [[ $git_diff6 != '' ]]
+          then echo "gitManagementOutput=setmgmt"  >> $GITHUB_ENV
+        fi
+
+  - task: Bash@3
+    displayName: Check for logging Changes
+    name: git_logging_diff
+  inputs:
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+        git_logging=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/logging/logging.bicep)
+        echo "##vso[task.setvariable variable=gitLoggingOUTPUT]$git_logging"
+
+  - task: Bash@3
+    displayName: Check for hubNetworking Changes
+    name: git_hubnetworking_diff
+  inputs:
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+        git_hub=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep)
+        echo "##vso[task.setvariable variable=gitHubOUTPUT]$git_hub"
+
+  - task: Bash@3
+    displayName: Check for spokeNetworking Changes
+    name: git_spokenetworking_diff
     inputs:
       targetType: 'inline'
       script: |
-        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/managementGroups/managementGroups.bicep
-        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep
-        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep
-        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep
-        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep
-        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep
+        git_spoke=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep)
+        echo "gitSpokeOUTPUT=$git_spoke" >> $GITHUB_ENV
+        echo "##vso[task.setvariable variable=gitSpokeOUTPUT]$git_spoke"
 
+  - task: AzureCLI@2    
+    displayName: Az CLI Create Subscription for PR
+    name: create_subscription
+    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', '') )
+    #if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+    inputs:
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        subid=$(az deployment tenant create --name "deploy-${{ env.SubscriptionName }}" --location ${{ env.Location }} --template-file infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.bicep --parameters @infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.parameters.example.json --parameters parSubscriptionBillingScope=${{ secrets.ALZ_AZURE_SECRET_EA_BILLING_ACCOUNT }} parSubscriptionName=${{ env.SubscriptionName }} | jq .properties.outputs.outSubscriptionId.value)
+        echo "SUBIDOUTPUT=$subid" >> $GITHUB_ENV
+  
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Refresh subscription list
+  #   name: refresh_subscription
+  #       if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az account list --refresh
+        
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Create Resource Group for PR
+  #   name: create_rsg
+  #       if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az account set --subscription ${{ env.SUBIDOUTPUT }}
+  #       if [ $(az group exists --name ${{ env.ResourceGroupName }} ) == false ]; then
+  #           sleep 300
+  #       fi
+  #       az group create --name ${{ env.ResourceGroupName }} --location ${{ env.Location }}
 
-      # - name: Check for logging Changes
-      #   id: git_logging_diff
-      #   shell: bash
-      #   run: |
-      #     git_logging=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/logging/logging.bicep)
-      #     echo "gitLoggingOUTPUT=$git_logging"  >> $GITHUB_ENV
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Deploy Management Groups for PR
+  #   name: create_mgs
+  #       if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #         az deployment tenant create --template-file infra-as-code/bicep/modules/managementGroups/managementGroups.bicep --parameters @infra-as-code/bicep/modules/managementGroups/managementGroups.parameters.example.json parTopLevelManagementGroupPrefix=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }}
+  
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Deploy Custom Role Definitions for PR
+  #   name: create_rbac_roles
+  #       if: ${{ env.gitManagementOutput != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment mg create --template-file infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep  --parameters @infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.parameters.example.json parAssignableScopeManagementGroupId=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
+  
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Deploy Custom Policy Definitions for PR
+  #   name: create_policy_defs
+  #       if: ${{ env.gitManagementOutput != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment mg create --template-file infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep  --parameters @infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.parameters.example.json parTargetManagementGroupID=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }} 
+  
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Deploy Logging for PR
+  #   name: create_logging
+  #       if: ${{ env.gitLoggingOUTPUT != '' }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment group create --resource-group ${{ env.ResourceGroupName }} --template-file infra-as-code/bicep/modules/logging/logging.bicep --parameters @infra-as-code/bicep/modules/logging/logging.parameters.example.json
 
-      # - name: Check for hubNetworking Changes
-      #   id: git_hubnetworking_diff
-      #   shell: bash
-      #   run: |
-      #     git_hub=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep)
-      #     echo "gitHubOUTPUT=$git_hub" >> $GITHUB_ENV
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Policy Assignment DINE for PR
+  #   name: create_policy_assignment_dine
+  #       if: ${{ env.gitManagementOutput != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location ${{ env.Location }} --management-group-id "${{ env.ManagementGroupPrefix }}-landingzones"
+  #       az deployment mg create --template-file infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.parameters.service-principal.example.json --location ${{ env.Location }} --management-group-id "${{ env.ManagementGroupPrefix }}-platform"
 
-      # - name: Check for spokeNetworking Changes
-      #   id: git_spokenetworking_diff
-      #   shell: bash
-      #   run: |
-      #     git_spoke=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep)
-      #     echo "gitSpokeOUTPUT=$git_spoke" >> $GITHUB_ENV
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Subscription Placement for PR
+  #   name: move_sub
+  #       if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=${{ env.ManagementGroupPrefix }} parSubscriptionIds='["${{env.SUBIDOUTPUT}}"]' --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
+
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Deploy Hub Networking for PR
+  #   name: create_hub_network
+  #       if: ${{ env.gitHubOUTPUT != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment group create --resource-group ${{ env.ResourceGroupName }} --template-file infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep
+
+  # - task: AzureCLI@2              
+  #   displayName: Az CLI Deploy Spoke Networking for PR
+  #   name: create_spoke_network
+  #       if: ${{ env.gitSpokeOUTPUT != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       az deployment group create --resource-group ${{ env.ResourceGroupName }} --template-file infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep
+
 
