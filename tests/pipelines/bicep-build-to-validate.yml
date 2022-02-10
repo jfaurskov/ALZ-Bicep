@@ -30,6 +30,7 @@ jobs:
   # - download: current
   #     artifact: AlzBicep
   - task: PowerShell@2
+    displayName: Bicep Build to Test for PR
     inputs:
       targetType: 'inline'
       script: |
@@ -45,4 +46,58 @@ jobs:
                   echo $output
                 }   
               }
+
+- job: bicep_deploy
+  displayName: Deploy Bicep Files for PR
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+    #environment: BicepUnitTests
+    # outputs:
+    #   isDeployed: $(${{ env.gitLoggingOUTPUT != ''  }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }} || ${{ steps.git_management_diff.outputs.diff != '' != ''  }})
+    #   subscriptionID: ${{ env.SUBIDOUTPUT }}
+      # - name: Checkout Repo
+      #   uses: actions/checkout@v2
+      #   with:
+      #     fetch-depth: 0
+
+      # - name: Azure Login
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: ${{ secrets.ALZ_AZURE_SECRET_UNIT_TESTS }}
+      #     enable-AzPSSession: true
+  - task: Bash@3
+    displayName: Check for managementGroup Changes
+    name: git_management_diff
+    inputs:
+      targetType: 'inline'
+      script: |
+        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/managementGroups/managementGroups.bicep
+        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep
+        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep
+        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep
+        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep
+        git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep
+
+
+      # - name: Check for logging Changes
+      #   id: git_logging_diff
+      #   shell: bash
+      #   run: |
+      #     git_logging=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/logging/logging.bicep)
+      #     echo "gitLoggingOUTPUT=$git_logging"  >> $GITHUB_ENV
+
+      # - name: Check for hubNetworking Changes
+      #   id: git_hubnetworking_diff
+      #   shell: bash
+      #   run: |
+      #     git_hub=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep)
+      #     echo "gitHubOUTPUT=$git_hub" >> $GITHUB_ENV
+
+      # - name: Check for spokeNetworking Changes
+      #   id: git_spokenetworking_diff
+      #   shell: bash
+      #   run: |
+      #     git_spoke=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep)
+      #     echo "gitSpokeOUTPUT=$git_spoke" >> $GITHUB_ENV
 
