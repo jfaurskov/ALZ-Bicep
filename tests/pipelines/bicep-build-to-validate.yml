@@ -20,7 +20,7 @@ jobs:
 - job: bicep_unit_tests
   displayName: Test Bicep Files for PR
   pool:
-    vmImage: ubuntu-latest
+    vmImage: windows-latest
   steps:
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -44,7 +44,7 @@ jobs:
 - job: bicep_deploy
   displayName: Deploy Bicep Files for PR
   pool:
-    vmImage: ubuntu-latest
+    vmImage: windows-latest
   steps:
   - task: Bash@3
     displayName: Check for managementGroup Changes
