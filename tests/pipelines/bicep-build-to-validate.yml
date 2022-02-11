@@ -110,6 +110,17 @@ jobs:
         echo "##vso[task.setvariable variable=gitSpokeOUTPUT]$git_spoke"
 
   - task: Bash@3
+    displayName: INTERIM DELETE BEFORE PROD
+    name: git_hardcode_variables
+    inputs:
+      targetType: 'inline'
+      script: |
+        echo "##vso[task.setvariable variable=gitSpokeOUTPUT]something"
+        echo "##vso[task.setvariable variable=gitHubOUTPUT]something"
+        echo "##vso[task.setvariable variable=gitLoggingOUTPUT]something"
+        echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
+
+  - task: Bash@3
     displayName: Login to Azure
     name: git_azlogin
     inputs:
@@ -120,8 +131,7 @@ jobs:
   - task: Bash@3
     displayName: Az CLI Create Subscription for PR
     name: create_subscription
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', '') )
-    #if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -131,115 +141,96 @@ jobs:
   - task: Bash@3
     displayName: Az CLI Refresh subscription list
     name: refresh_subscription
+    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
     inputs:
       targetType: 'inline'
       script: |
         az account list --refresh        
-
-
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Refresh subscription list
-  #   name: refresh_subscription
-  #       if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az account list --refresh
         
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Create Resource Group for PR
-  #   name: create_rsg
-  #       if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az account set --subscription ${{ env.SUBIDOUTPUT }}
-  #       if [ $(az group exists --name ${{ env.ResourceGroupName }} ) == false ]; then
-  #           sleep 300
-  #       fi
-  #       az group create --name ${{ env.ResourceGroupName }} --location ${{ env.Location }}
+  - task: Bash@3    
+    displayName: Az CLI Create Resource Group for PR
+    name: create_rsg
+    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    inputs:
+      targetType: 'inline'
+      script: |
+        az account set --subscription $(SUBIDOUTPUT)
+        if [ $(az group exists --name $(ResourceGroupName) ) == false ]; then
+            sleep 300
+        fi
+        az group create --name $(ResourceGroupName) --location $(Location)
 
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Deploy Management Groups for PR
-  #   name: create_mgs
-  #       if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #         az deployment tenant create --template-file infra-as-code/bicep/modules/managementGroups/managementGroups.bicep --parameters @infra-as-code/bicep/modules/managementGroups/managementGroups.parameters.example.json parTopLevelManagementGroupPrefix=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }}
+  - task: Bash@3     
+    displayName: Az CLI Deploy Management Groups for PR
+    name: create_mgs
+    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment tenant create --template-file infra-as-code/bicep/modules/managementGroups/managementGroups.bicep --parameters @infra-as-code/bicep/modules/managementGroups/managementGroups.parameters.example.json parTopLevelManagementGroupPrefix=$(ManagementGroupPrefix) --location $(Location)
   
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Deploy Custom Role Definitions for PR
-  #   name: create_rbac_roles
-  #       if: ${{ env.gitManagementOutput != ''  }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment mg create --template-file infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep  --parameters @infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.parameters.example.json parAssignableScopeManagementGroupId=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
+  - task: Bash@3  
+    displayName: Az CLI Deploy Custom Role Definitions for PR
+    name: create_rbac_roles
+    condition: ne('${{ variables.gitManagementOutput }}', '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment mg create --template-file infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep  --parameters @infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.parameters.example.json parAssignableScopeManagementGroupId=$(ManagementGroupPrefix) --location $(Location) --management-group-id $(ManagementGroupPrefix)
   
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Deploy Custom Policy Definitions for PR
-  #   name: create_policy_defs
-  #       if: ${{ env.gitManagementOutput != ''  }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment mg create --template-file infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep  --parameters @infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.parameters.example.json parTargetManagementGroupID=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }} 
+  - task: Bash@3    
+    displayName: Az CLI Deploy Custom Policy Definitions for PR
+    name: create_policy_defs
+    condition: ne('${{ variables.gitManagementOutput }}', '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment mg create --template-file infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep  --parameters @infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.parameters.example.json parTargetManagementGroupID=$(ManagementGroupPrefix) --location $(Location) --management-group-id $(ManagementGroupPrefix) 
   
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Deploy Logging for PR
-  #   name: create_logging
-  #       if: ${{ env.gitLoggingOUTPUT != '' }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment group create --resource-group ${{ env.ResourceGroupName }} --template-file infra-as-code/bicep/modules/logging/logging.bicep --parameters @infra-as-code/bicep/modules/logging/logging.parameters.example.json
+  - task: Bash@3    
+    displayName: Az CLI Deploy Logging for PR
+    name: create_logging
+    condition: ne('${{ variables.gitLogginOutput }}', '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/logging/logging.bicep --parameters @infra-as-code/bicep/modules/logging/logging.parameters.example.json
 
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Policy Assignment DINE for PR
-  #   name: create_policy_assignment_dine
-  #       if: ${{ env.gitManagementOutput != ''  }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location ${{ env.Location }} --management-group-id "${{ env.ManagementGroupPrefix }}-landingzones"
-  #       az deployment mg create --template-file infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.parameters.service-principal.example.json --location ${{ env.Location }} --management-group-id "${{ env.ManagementGroupPrefix }}-platform"
+  - task: Bash@3    
+    displayName: Az CLI Policy Assignment DINE for PR
+    name: create_policy_assignment_dine
+    condition: ne('${{ variables.gitManagementOutput }}', '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-landingzones"
+        az deployment mg create --template-file infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.parameters.service-principal.example.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
 
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Subscription Placement for PR
-  #   name: move_sub
-  #       if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=${{ env.ManagementGroupPrefix }} parSubscriptionIds='["${{env.SUBIDOUTPUT}}"]' --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
+  - task: Bash@3    
+    displayName: Az CLI Subscription Placement for PR
+    name: move_sub
+    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=$(ManagementGroupPrefix) parSubscriptionIds='["${{env.SUBIDOUTPUT}}"]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
 
-  # - task: AzureCLI@2    
-  #   displayName: Az CLI Deploy Hub Networking for PR
-  #   name: create_hub_network
-  #       if: ${{ env.gitHubOUTPUT != ''  }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment group create --resource-group ${{ env.ResourceGroupName }} --template-file infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep
+  - task: Bash@3    
+    displayName: Az CLI Deploy Hub Networking for PR
+    name: create_hub_network
+    condition: ne('${{ variables.gitHubOUTPUT }}', '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep
 
-  # - task: AzureCLI@2              
-  #   displayName: Az CLI Deploy Spoke Networking for PR
-  #   name: create_spoke_network
-  #       if: ${{ env.gitSpokeOUTPUT != ''  }}
-  #   inputs:
-  #     scriptType: 'bash'
-  #     scriptLocation: 'inlineScript'
-  #     inlineScript: |
-  #       az deployment group create --resource-group ${{ env.ResourceGroupName }} --template-file infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep
+  - task: Bash@3              
+    displayName: Az CLI Deploy Spoke Networking for PR
+    name: create_spoke_network
+    condition: ne('${{ variables.gitSpokeOUTPUT }}', '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep
 
 
