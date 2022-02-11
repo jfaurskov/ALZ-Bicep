@@ -10,12 +10,17 @@ trigger:
       - "**.bicep"
 
 variables:
-  ResourceGroupName: "rsg-github-pr-$(System.PullRequest.PullRequestId)"
-  ManagementGroupPrefix: "PR-$(System.PullRequest.PullRequestId)"
-  TopLevelManagementGroupDisplayName: "PR $(System.PullRequest.PullRequestId) Azure Landing Zones"
-  SubscriptionName: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
-  Location: "eastus"
   - group: csu-bicep-environment
+  - name: ResourceGroupName
+    value: "rsg-github-pr-$(System.PullRequest.PullRequestId)"
+  - name: ManagementGroupPrefix
+    value: "PR-$(System.PullRequest.PullRequestId)"
+  - name: TopLevelManagementGroupDisplayName
+    value: "PR $(System.PullRequest.PullRequestId) Azure Landing Zones"
+  - name: SubscriptionName
+    value: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
+  - name: Location
+    value: "eastus"
 
 jobs:
 - job: bicep_unit_tests
