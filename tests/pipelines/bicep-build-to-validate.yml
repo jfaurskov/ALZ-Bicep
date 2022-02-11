@@ -46,8 +46,8 @@ jobs:
         # Verify you can now access the 'bicep' command
         bicep --help
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-        sudo apt-get -y install jq
-        ls -l /usr/bin/jq
+        # sudo apt-get -y install jq
+        # ls -l /usr/bin/jq
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -74,6 +74,14 @@ jobs:
     #vmImage: ubuntu-latest
   steps:
   - task: Bash@3
+    displayName: Install relevant software on self-hosted runner
+    name: install_sw
+    inputs:
+      targetType: 'inline'
+      script: |
+        sudo apt-get -y install jq
+        
+  - task: Bash@3
     displayName: Check for managementGroup Changes
     name: git_management_diff
     inputs:
@@ -82,8 +90,8 @@ jobs:
           git_diff1=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/managementGroups/managementGroups.bicep)
           git_diff2=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep)
           git_diff3=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep)
-          git_diff4=$(git diff --name-only HEAD^ HEAD alzbicep/infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep)
-          git_diff5=$(git diff --name-only HEAD^ HEAD alzbicep/infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep)
+          git_diff4=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep)
+          git_diff5=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep)
           git_diff6=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep)
           if [[ $git_diff1 != '' ]] || [[ $git_diff2 != '' ]] || [[ $git_diff3 != '' ]] || [[ $git_diff4 != '' ]] || [[ $git_diff5 != '' ]] || [[ $git_diff6 != '' ]]
             then echo "##vso[task.setvariable variable=gitManagementOutput]setmgmt"
@@ -124,10 +132,6 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        # echo "##vso[task.setvariable variable=gitSpokeOUTPUT]something"
-        # echo "##vso[task.setvariable variable=gitHubOUTPUT]something"
-        # echo "##vso[task.setvariable variable=gitLoggingOUTPUT]something"
-        # echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
         echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-50"
         echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-50"
         echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 50 Azure Landing Zones"
