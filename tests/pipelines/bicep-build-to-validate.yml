@@ -51,6 +51,8 @@ jobs:
         sudo mv ./bicep /usr/local/bin/bicep
         # Verify you can now access the 'bicep' command
         bicep --help
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
