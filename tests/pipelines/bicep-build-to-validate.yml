@@ -123,10 +123,15 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        echo "##vso[task.setvariable variable=gitSpokeOUTPUT]something"
-        echo "##vso[task.setvariable variable=gitHubOUTPUT]something"
-        echo "##vso[task.setvariable variable=gitLoggingOUTPUT]something"
-        echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
+        # echo "##vso[task.setvariable variable=gitSpokeOUTPUT]something"
+        # echo "##vso[task.setvariable variable=gitHubOUTPUT]something"
+        # echo "##vso[task.setvariable variable=gitLoggingOUTPUT]something"
+        # echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
+        echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-50"
+        echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-50"
+        echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 50 Azure Landing Zones"
+        echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-50"
+
 
   - task: Bash@3
     displayName: Login to Azure
@@ -144,6 +149,7 @@ jobs:
       targetType: 'inline'
       script: |
         subid=$(az deployment tenant create --name "deploy-$(SubscriptionName)" --location $(Location) --template-file infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.bicep --parameters @infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.parameters.example.json --parameters parSubscriptionBillingScope=$(ALZ-AZURE-SECRET-EA-BILLING-ACCOUNT) parSubscriptionName=$(SubscriptionName) | jq .properties.outputs.outSubscriptionId.value)
+        echo $subId
         echo "##vso[task.setvariable variable=SUBIDOUTPUT]$subid"
 
   - task: Bash@3
@@ -256,14 +262,14 @@ jobs:
       script: |
         az login --service-principal --username $(azclilogin) --password $(azclipwd) --tenant $(azclitenant)
 
-  - task: PowerShell@2
-    displayName: Az CLI Remove/Cleanup Deployment
-    #  if: needs.bicep_deploy.outputs.isDeployed
-    inputs:
-      targetType: 'inline'
-      script: |
-        install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
-        install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
-        install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
-        .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
+  # - task: PowerShell@2
+  #   displayName: Az CLI Remove/Cleanup Deployment
+  #   #  if: needs.bicep_deploy.outputs.isDeployed
+  #   inputs:
+  #     targetType: 'inline'
+  #     script: |
+  #       install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
+  #       install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
+  #       install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
+  #       .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
 
