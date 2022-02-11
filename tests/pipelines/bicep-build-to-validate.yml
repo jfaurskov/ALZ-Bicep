@@ -15,12 +15,13 @@ variables:
   TopLevelManagementGroupDisplayName: "PR $(System.PullRequest.PullRequestId) Azure Landing Zones"
   SubscriptionName: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
   Location: "eastus"
+  - group: csu-bicep-environment
 
 jobs:
 - job: bicep_unit_tests
   displayName: Test Bicep Files for PR
   pool:
-    vmImage: windows-latest
+    vmImage: ubuntu-latest
   steps:
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -44,8 +45,17 @@ jobs:
 - job: bicep_deploy
   displayName: Deploy Bicep Files for PR
   pool:
-    vmImage: windows-latest
+    vmImage: ubuntu-latest
   steps:
+  # - task: AzureKeyVault@2
+  #   displayName: Get Azure credentials
+  #   name: git_keyvault
+  #   inputs:
+  #   azureSubscription: 'bicepkeyvault'
+  #   KeyVaultName: 'alzbicepcreds'
+  #   SecretsFilter: 'spn-gitaction-unittest'
+  #   RunAsPreJob: false
+
   - task: Bash@3
     displayName: Check for managementGroup Changes
     name: git_management_diff
@@ -93,16 +103,24 @@ jobs:
         echo "gitSpokeOUTPUT=$git_spoke" >> $GITHUB_ENV
         echo "##vso[task.setvariable variable=gitSpokeOUTPUT]$git_spoke"
 
-  - task: AzureCLI@2    
-    displayName: Az CLI Create Subscription for PR
-    name: create_subscription
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', '') )
-    #if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+  - task: Bash@3
+    displayName: Login to Azure
+    name: git_azlogin
     inputs:
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        echo "hello world"
+      targetType: 'inline'
+      script: |
+        az login --service-principal --username $(azclilogin) --password $(azclipwd) --tenant $(azclitenant)
+
+  # - task: AzureCLI@2    
+  #   displayName: Az CLI Create Subscription for PR
+  #   name: create_subscription
+  #   condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', '') )
+  #   #if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+  #   inputs:
+  #     scriptType: 'bash'
+  #     scriptLocation: 'inlineScript'
+  #     inlineScript: |
+  #       echo "hello world"
 
         
   
