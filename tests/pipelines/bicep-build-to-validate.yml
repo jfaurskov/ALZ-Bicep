@@ -40,7 +40,7 @@ jobs:
 
   - task: Bash@3
     displayName: Install Bicep on self-hosted runner
-    name: install-bicep
+    name: install_bicep
     inputs:
       targetType: 'inline'
       script: |
