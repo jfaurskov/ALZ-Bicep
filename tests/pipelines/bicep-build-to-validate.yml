@@ -32,11 +32,19 @@ jobs:
   pool: ALZ-Bicep
     #vmImage: ubuntu-latest
   steps:
-  - task: PublishPipelineArtifact@1
-    displayName: Publish directory as Artifact
+  # - task: PublishPipelineArtifact@1
+  #   displayName: Publish directory as Artifact
+  #   inputs:
+  #     targetPath: '$(System.DefaultWorkingDirectory)'
+  #     artifactName: alzbicep
+
+  - task: Bash@3
+    displayName: Install Bicep on self-hosted runner
+    name: install-bicep
     inputs:
-      targetPath: '$(System.DefaultWorkingDirectory)'
-      artifactName: alzbicep
+      targetType: 'inline'
+      script: |
+        az bicep install
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -62,8 +70,8 @@ jobs:
   pool: ALZ-Bicep
     #vmImage: ubuntu-latest
   steps:
-  - download: current
-    artifact: alzbicep
+  # - download: current
+  #   artifact: alzbicep
 
   - task: Bash@3
     displayName: Check for managementGroup Changes
