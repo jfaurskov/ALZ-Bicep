@@ -33,6 +33,9 @@ jobs:
     inputs:
       targetPath: '$(System.DefaultWorkingDirectory)'
       artifactName: alzbicep
+      
+  - download: current
+    artifact: alzbicep
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -40,7 +43,7 @@ jobs:
       scriptType: 'bash'
       scriptLocation: 'inlineScript'
       inlineScript: |
-          Get-ChildItem -Path $(System.DefaultWorkingDirectory) -Recurse -Filter '*.bicep' -Exclude 'callModuleFromACR.example.bicep','orch-hubSpoke.bicep' | ForEach-Object {
+          Get-ChildItem -Path '$(Pipeline.Workspace)/alzbicep' -Recurse -Filter '*.bicep' -Exclude 'callModuleFromACR.example.bicep','orch-hubSpoke.bicep' | ForEach-Object {
             Write-Information "==> Attempting Bicep Build For File: $_" -InformationAction Continue
               $output = bicep build $_.FullName 2>&1
                 if ($LastExitCode -ne 0)
