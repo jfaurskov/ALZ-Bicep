@@ -29,8 +29,8 @@ variables:
 jobs:
 - job: bicep_unit_tests
   displayName: Test Bicep Files for PR
-  pool:
-    vmImage: ALZ-Bicep
+  pool: ALZ-Bicep
+    #vmImage: ubuntu-latest
   steps:
   - task: PublishPipelineArtifact@1
     displayName: Publish directory as Artifact
@@ -59,8 +59,8 @@ jobs:
 - job: bicep_deploy
   dependsOn: bicep_unit_tests
   displayName: Deploy Bicep Files for PR
-  pool:
-    vmImage: ALZ-Bicep
+  pool: ALZ-Bicep
+    #vmImage: ubuntu-latest
   steps:
   - download: current
     artifact: alzbicep
@@ -236,8 +236,8 @@ jobs:
 - job: bicep_cleanup
   dependsOn: bicep_deploy
   displayName: Cleanup Bicep Deployment for PR
-  pool:
-    vmImage: ALZ-Bicep
+  pool: ALZ-Bicep
+    #vmImage: ubuntu-latest
   #environment: BicepUnitTests
   steps:
   - task: Bash@3
