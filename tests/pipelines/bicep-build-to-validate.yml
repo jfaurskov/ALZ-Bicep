@@ -238,7 +238,6 @@ jobs:
   displayName: Cleanup Bicep Deployment for PR
   pool:
     vmImage: ubuntu-latest
-  steps:
   #environment: BicepUnitTests
   steps:
   - task: Bash@3
