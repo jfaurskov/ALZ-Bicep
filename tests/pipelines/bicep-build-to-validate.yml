@@ -38,13 +38,19 @@ jobs:
   #     targetPath: '$(System.DefaultWorkingDirectory)'
   #     artifactName: alzbicep
 
-  # - task: Bash@3
-  #   displayName: Install Bicep on self-hosted runner
-  #   name: install_bicep
-  #   inputs:
-  #     targetType: 'inline'
-  #     script: |
-  #       az bicep install
+  - task: Bash@3
+    displayName: Install relevant software on self-hosted runner
+    name: install_sw
+    inputs:
+      targetType: 'inline'
+      script: |
+        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+        # Mark it as executable
+        chmod +x ./bicep
+        # Add bicep to your PATH (requires admin)
+        sudo mv ./bicep /usr/local/bin/bicep
+        # Verify you can now access the 'bicep' command
+        bicep --help
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
