@@ -92,8 +92,9 @@ jobs:
           git_diff5=$(git diff --name-only HEAD^ HEAD alzbicep/infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep)
           git_diff6=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep)
           if [[ $git_diff1 != '' ]] || [[ $git_diff2 != '' ]] || [[ $git_diff3 != '' ]] || [[ $git_diff4 != '' ]] || [[ $git_diff5 != '' ]] || [[ $git_diff6 != '' ]]
-            then echo "gitManagementOutput=setmgmt"  >> $GITHUB_ENV
+            then echo "##vso[task.setvariable variable=gitManagementOutput]setmgmt"
           fi
+          echo 
 
   - task: Bash@3
     displayName: Check for logging Changes
@@ -145,7 +146,7 @@ jobs:
   - task: Bash@3
     displayName: Az CLI Create Subscription for PR
     name: create_subscription
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
     inputs:
       targetType: 'inline'
       script: |
