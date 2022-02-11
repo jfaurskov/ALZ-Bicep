@@ -233,4 +233,30 @@ jobs:
       script: |
         az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep
 
+- job: bicep_cleanup
+  dependsOn: bicep_deploy
+  displayName: Cleanup Bicep Deployment for PR
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  #environment: BicepUnitTests
+  steps:
+  - task: Bash@3
+    displayName: Login to Azure
+    name: git_azlogin
+    inputs:
+      targetType: 'inline'
+      script: |
+        az login --service-principal --username $(azclilogin) --password $(azclipwd) --tenant $(azclitenant)
+
+  - task: PowerShell@2
+    displayName: Az CLI Remove/Cleanup Deployment
+    #  if: needs.bicep_deploy.outputs.isDeployed
+    inputs:
+      targetType: 'inline'
+      script: |
+        install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
+        install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
+        install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
+        .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID "$(ALZ-AZURE-SECRET-TENANT-ID)" -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
 
