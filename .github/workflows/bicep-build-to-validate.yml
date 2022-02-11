@@ -67,15 +67,12 @@ jobs:
         id: git_management_diff
         shell: bash
         run: |
-          git_diff1=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/managementGroups/managementGroups.bicep)
-          git_diff2=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep)
-          git_diff3=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep)
-          git_diff4=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep)
-          git_diff5=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep)
-          git_diff6=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep)
-          if [[ $git_diff1 != '' ]] || [[ $git_diff2 != '' ]] || [[ $git_diff3 != '' ]] || [[ $git_diff4 != '' ]] || [[ $git_diff5 != '' ]] || [[ $git_diff6 != '' ]]
-          then echo "gitManagementOutput=setmgmt"  >> $GITHUB_ENV
-          fi
+          git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/managementGroups/managementGroups.bicep
+          git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep
+          git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep
+          git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep
+          git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep
+          git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep
 
       - name: Check for logging Changes
         id: git_logging_diff
@@ -100,7 +97,7 @@ jobs:
 
       - name: Az CLI Create Subscription for PR
         id: create_subscription
-        if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+        if: ${{ steps.git_management_diff.outputs.diff != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
         shell: bash
         run: |
             subid=$(az deployment tenant create --name "deploy-${{ env.SubscriptionName }}" --location ${{ env.Location }} --template-file infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.bicep --parameters @infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.parameters.example.json --parameters parSubscriptionBillingScope=${{ secrets.ALZ_AZURE_SECRET_EA_BILLING_ACCOUNT }} parSubscriptionName=${{ env.SubscriptionName }} | jq .properties.outputs.outSubscriptionId.value)
@@ -108,14 +105,14 @@ jobs:
 
       - name: Az CLI Refresh subscription list
         id: refresh_subscription
-        if: ${{ env.gitManagementOutput != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
+        if: ${{ steps.git_management_diff.outputs.diff != ''  }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != ''  }} || ${{ env.gitSpokeOUTPUT != ''  }}
         shell: bash
         run: |
             az account list --refresh
             
       - name: Az CLI Create Resource Group for PR
         id: create_rsg
-        if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
+        if: ${{ steps.git_management_diff.outputs.diff != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
         shell: bash
         run: |
             az account set --subscription ${{ env.SUBIDOUTPUT }}
@@ -126,24 +123,26 @@ jobs:
 
       - name: Az CLI Deploy Management Groups for PR
         id: create_mgs
-        if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
         shell: bash
         run: |
-          az deployment tenant create --template-file infra-as-code/bicep/modules/managementGroups/managementGroups.bicep --parameters @infra-as-code/bicep/modules/managementGroups/managementGroups.parameters.example.json parTopLevelManagementGroupPrefix=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }}
+          if [[ ${{ steps.git_management_diff.outputs.diff != ''  }} ]] ; then
+            az deployment tenant create --template-file infra-as-code/bicep/modules/managementGroups/managementGroups.bicep --parameters parTopLevelManagementGroupPrefix=${{ env.ManagementGroupPrefix }} parTopLevelManagementGroupDisplayName="${{ env.TopLevelManagementGroupDisplayName }}" --location ${{ env.Location }}
+          fi
+          exit 0
 
       - name: Az CLI Deploy Custom Role Definitions for PR
         id: create_rbac_roles
-        if: ${{ env.gitManagementOutput != ''  }}
+        if: ${{ steps.git_management_diff.outputs.diff != ''  }}
         shell: bash
         run: |
-            az deployment mg create --template-file infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep  --parameters @infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.parameters.example.json parAssignableScopeManagementGroupId=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
+            az deployment mg create --template-file infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.bicep  --parameters @infra-as-code/bicep/modules/customRoleDefinitions/customRoleDefinitions.parameters.example.json --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
 
       - name: Az CLI Deploy Custom Policy Definitions for PR
         id: create_policy_defs
-        if: ${{ env.gitManagementOutput != ''  }}
+        if: ${{ steps.git_management_diff.outputs.diff != ''  }}
         shell: bash
         run: |
-            az deployment mg create --template-file infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep  --parameters @infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.parameters.example.json parTargetManagementGroupID=${{ env.ManagementGroupPrefix }} --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }} 
+            az deployment mg create --template-file infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.bicep  --parameters @infra-as-code/bicep/modules/policy/definitions/custom-policy-definitions.parameters.example.json --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
 
       - name: Az CLI Deploy Logging for PR
         id: create_logging
@@ -154,7 +153,7 @@ jobs:
 
       - name: Az CLI Policy Assignment DINE for PR
         id: create_policy_assignment_dine
-        if: ${{ env.gitManagementOutput != ''  }}
+        if: ${{ steps.git_management_diff.outputs.diff != ''  }}
         shell: bash
         run: |
             az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location ${{ env.Location }} --management-group-id "${{ env.ManagementGroupPrefix }}-landingzones"
@@ -162,7 +161,7 @@ jobs:
 
       - name: Az CLI Subscription Placement for PR
         id: move_sub
-        if: ${{ env.gitManagementOutput != '' }} || ${{ env.gitLoggingOUTPUT != '' }} || ${{ env.gitHubOUTPUT != '' }} || ${{ env.gitSpokeOUTPUT != '' }}
+        if: ${{ steps.git_management_diff.outputs.diff != ''  }}
         shell: bash
         run: |
             az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=${{ env.ManagementGroupPrefix }} parSubscriptionIds='["${{env.SUBIDOUTPUT}}"]' --location ${{ env.Location }} --management-group-id ${{ env.ManagementGroupPrefix }}
