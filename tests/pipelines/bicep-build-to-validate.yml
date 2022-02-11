@@ -32,12 +32,6 @@ jobs:
   pool: ALZ-Bicep
     #vmImage: ubuntu-latest
   steps:
-  # - task: PublishPipelineArtifact@1
-  #   displayName: Publish directory as Artifact
-  #   inputs:
-  #     targetPath: '$(System.DefaultWorkingDirectory)'
-  #     artifactName: alzbicep
-
   - task: Bash@3
     displayName: Install relevant software on self-hosted runner
     name: install_sw
@@ -52,7 +46,7 @@ jobs:
         # Verify you can now access the 'bicep' command
         bicep --help
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
+        sudo apt-get install jq
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -78,9 +72,6 @@ jobs:
   pool: ALZ-Bicep
     #vmImage: ubuntu-latest
   steps:
-  # - download: current
-  #   artifact: alzbicep
-
   - task: Bash@3
     displayName: Check for managementGroup Changes
     name: git_management_diff
@@ -148,7 +139,7 @@ jobs:
   - task: Bash@3
     displayName: Az CLI Create Subscription for PR
     name: create_subscription
-    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -158,7 +149,7 @@ jobs:
   - task: Bash@3
     displayName: Az CLI Refresh subscription list
     name: refresh_subscription
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -167,7 +158,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Create Resource Group for PR
     name: create_rsg
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -180,7 +171,7 @@ jobs:
   - task: Bash@3     
     displayName: Az CLI Deploy Management Groups for PR
     name: create_mgs
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -189,7 +180,7 @@ jobs:
   - task: Bash@3  
     displayName: Az CLI Deploy Custom Role Definitions for PR
     name: create_rbac_roles
-    condition: ne('${{ variables.gitManagementOutput }}', '')
+    condition: ne(variables['gitManagementOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -198,7 +189,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Custom Policy Definitions for PR
     name: create_policy_defs
-    condition: ne('${{ variables.gitManagementOutput }}', '')
+    condition: ne(variables['gitManagementOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -207,7 +198,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Logging for PR
     name: create_logging
-    condition: ne('${{ variables.gitLogginOutput }}', '')
+    condition: ne(variables['gitLoggingOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -216,7 +207,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Policy Assignment DINE for PR
     name: create_policy_assignment_dine
-    condition: ne('${{ variables.gitManagementOutput }}', '')
+    condition: ne(variables['gitManagementOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -226,7 +217,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Subscription Placement for PR
     name: move_sub
-    condition: or(ne('${{ variables.gitManagementOutput }}', ''), ne('${{ variables.gitLoggingOUTPUT }}', ''), ne('${{ variables.gitSpokeOUTPUT }}', ''), ne('${{ variables.gitHubOUTPUT }}', ''))
+    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -235,7 +226,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
     name: create_hub_network
-    condition: ne('${{ variables.gitHubOUTPUT }}', '')
+    condition: ne(variables['gitHubOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -244,7 +235,7 @@ jobs:
   - task: Bash@3              
     displayName: Az CLI Deploy Spoke Networking for PR
     name: create_spoke_network
-    condition: ne('${{ variables.gitSpokeOUTPUT }}', '')
+    condition: ne(variables['gitSpokeOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -274,5 +265,5 @@ jobs:
         install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
         install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
         install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
-        .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID "$(ALZ-AZURE-SECRET-TENANT-ID)" -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
+        .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
 
