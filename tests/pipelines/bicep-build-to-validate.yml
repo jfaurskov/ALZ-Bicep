@@ -81,9 +81,8 @@ jobs:
     displayName: Check for logging Changes
     name: git_logging_diff
     inputs:
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
+      targetType: 'inline'
+      script: |
           git_logging=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/logging/logging.bicep)
           echo "##vso[task.setvariable variable=gitLoggingOUTPUT]$git_logging"
 
@@ -91,9 +90,8 @@ jobs:
     displayName: Check for hubNetworking Changes
     name: git_hubnetworking_diff
     inputs:
-      scriptType: 'bash'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
+      targetType: 'inline'
+      script: |
           git_hub=$(git diff --name-only HEAD^ HEAD infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep)
           echo "##vso[task.setvariable variable=gitHubOUTPUT]$git_hub"
 
