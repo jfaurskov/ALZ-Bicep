@@ -8,10 +8,10 @@ trigger:
   paths:
     include:
       - "**.bicep"
-  pr:
-  branches:
-    include:
-    - main
+  # pr:
+  # branches:
+  #   include:
+  #   - main
 
 variables:
   - group: csu-bicep-environment
