@@ -213,7 +213,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=$(ManagementGroupPrefix) parSubscriptionIds='["${{env.SUBIDOUTPUT}}"]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
+        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=$(ManagementGroupPrefix) parSubscriptionIds='["$(SUBIDOUTPUT)"]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
 
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
