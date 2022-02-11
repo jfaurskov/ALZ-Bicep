@@ -124,8 +124,15 @@ jobs:
   #     inlineScript: |
   #       echo "hello world"
 
-        
-  
+  - task: Bash@3
+    displayName: Az CLI Refresh subscription list
+    name: refresh_subscription
+    inputs:
+      targetType: 'inline'
+      script: |
+        az account list --refresh        
+
+
   # - task: AzureCLI@2    
   #   displayName: Az CLI Refresh subscription list
   #   name: refresh_subscription
