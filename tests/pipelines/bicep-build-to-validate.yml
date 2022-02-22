@@ -24,7 +24,7 @@ variables:
   - name: SubscriptionName
     value: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
   - name: Location
-    value: "northeurope"
+    value: ""
 
 jobs:
 - job: bicep_unit_tests
@@ -223,9 +223,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        # az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-landingzones"
-        # az deployment mg create --template-file infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.parameters.service-principal.example.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
-        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
+        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json parTopLevelManagementGroupPrefix=$(ManagementGroupPrefix) --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
 
   - task: Bash@3    
     displayName: Az CLI Subscription Placement for PR
