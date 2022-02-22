@@ -132,10 +132,10 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-50"
-        echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-50"
-        echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 50 Azure Landing Zones"
-        echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-50"
+        echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-51"
+        echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-51"
+        echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 51 Azure Landing Zones"
+        echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-51"
         echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
 
 
