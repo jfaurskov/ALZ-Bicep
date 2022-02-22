@@ -223,8 +223,9 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-landingzones"
-        az deployment mg create --template-file infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.parameters.service-principal.example.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
+        # az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/policyAssignmentManagementGroup.parameters.example-dine.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-landingzones"
+        # az deployment mg create --template-file infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.bicep --parameters @infra-as-code/bicep/modules/roleAssignments/roleAssignmentManagementGroup.parameters.service-principal.example.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
+        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
 
   - task: Bash@3    
     displayName: Az CLI Subscription Placement for PR
@@ -233,7 +234,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=$(ManagementGroupPrefix) parSubscriptionIds='["$(SUBIDOUTPUT)"]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
+        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=$(ManagementGroupPrefix) parSubscriptionIds='[$(SUBIDOUTPUT)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
 
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
