@@ -24,7 +24,7 @@ variables:
   - name: SubscriptionName
     value: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
   - name: Location
-    value: "westeurope"
+    value: "northeurope"
 
 jobs:
 - job: bicep_unit_tests
