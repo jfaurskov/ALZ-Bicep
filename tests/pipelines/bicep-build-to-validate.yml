@@ -137,6 +137,7 @@ jobs:
         echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 52 Azure Landing Zones"
         echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-52"
         echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
+        echo "##vso[task.setvariable variable=gitLoggingOUTPUT]something"
 
 
   - task: Bash@3
