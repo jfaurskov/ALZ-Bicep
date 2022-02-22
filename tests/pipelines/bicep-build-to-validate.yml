@@ -29,25 +29,25 @@ variables:
 jobs:
 - job: bicep_unit_tests
   displayName: Test Bicep Files for PR
-  pool: ALZ-Bicep
-    #vmImage: ubuntu-latest
+  pool: #ALZ-Bicep
+    vmImage: ubuntu-latest
   steps:
-  - task: Bash@3
-    displayName: Install relevant software on self-hosted runner
-    name: install_sw
-    inputs:
-      targetType: 'inline'
-      script: |
-        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
-        # Mark it as executable
-        chmod +x ./bicep
-        # Add bicep to your PATH (requires admin)
-        sudo mv ./bicep /usr/local/bin/bicep
-        # Verify you can now access the 'bicep' command
-        bicep --help
-        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-        # sudo apt-get -y install jq
-        # ls -l /usr/bin/jq
+  # - task: Bash@3
+  #   displayName: Install relevant software on self-hosted runner
+  #   name: install_sw
+  #   inputs:
+  #     targetType: 'inline'
+  #     script: |
+  #       curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+  #       # Mark it as executable
+  #       chmod +x ./bicep
+  #       # Add bicep to your PATH (requires admin)
+  #       sudo mv ./bicep /usr/local/bin/bicep
+  #       # Verify you can now access the 'bicep' command
+  #       bicep --help
+  #       curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+  #       # sudo apt-get -y install jq
+  #       # ls -l /usr/bin/jq
 
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
@@ -70,16 +70,16 @@ jobs:
 - job: bicep_deploy
   dependsOn: bicep_unit_tests
   displayName: Deploy Bicep Files for PR
-  pool: ALZ-Bicep
-    #vmImage: ubuntu-latest
+  pool: #ALZ-Bicep
+    vmImage: ubuntu-latest
   steps:
-  - task: Bash@3
-    displayName: Install relevant software on self-hosted runner
-    name: install_sw
-    inputs:
-      targetType: 'inline'
-      script: |
-        sudo apt-get -y install jq
+  # - task: Bash@3
+  #   displayName: Install relevant software on self-hosted runner
+  #   name: install_sw
+  #   inputs:
+  #     targetType: 'inline'
+  #     script: |
+  #       sudo apt-get -y install jq
         
   - task: Bash@3
     displayName: Check for managementGroup Changes
@@ -255,8 +255,8 @@ jobs:
 - job: bicep_cleanup
   dependsOn: bicep_deploy
   displayName: Cleanup Bicep Deployment for PR
-  pool: ALZ-Bicep
-    #vmImage: ubuntu-latest
+  pool: #ALZ-Bicep
+    vmImage: ubuntu-latest
   #environment: BicepUnitTests
   steps:
   - task: Bash@3
