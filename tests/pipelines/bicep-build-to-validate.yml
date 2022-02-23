@@ -24,7 +24,7 @@ variables:
   - name: SubscriptionName
     value: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
   - name: Location
-    value: "eastus"
+    value: "germanywestcentral"
 
 jobs:
 - job: bicep_unit_tests
@@ -235,7 +235,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters @infra-as-code/bicep/modules/subscriptionPlacement.parameters.example.json parTargetManagementGroupId=$(ManagementGroupPrefix)-platform-connectivity parSubscriptionIds='[$(SUBIDOUTPUT)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
+        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters @infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.parameters.example.json parTargetManagementGroupId=$(ManagementGroupPrefix)-platform-connectivity parSubscriptionIds='[$(SUBIDOUTPUT)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
 
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
