@@ -164,7 +164,7 @@ jobs:
   - task: Bash@3
     displayName: Az CLI Refresh subscription list
     name: refresh_subscription
-    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], '')
     inputs:
       targetType: 'inline'
       script: |
@@ -235,7 +235,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters parTargetManagementGroupId=$(ManagementGroupPrefix) parSubscriptionIds='[$(SUBIDOUTPUT)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
+        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters @infra-as-code/bicep/modules/subscriptionPlacement.parameters.example.json parTargetManagementGroupId=$(ManagementGroupPrefix)-platform-connectivity parSubscriptionIds='[$(SUBIDOUTPUT)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
 
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
@@ -244,7 +244,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep
+        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/hubNetworking/hubNetworking.bicep --parameters @infra-as-code/bicep/modules/hubNetworking/hubNetworking.parameters.example.json
 
   - task: Bash@3              
     displayName: Az CLI Deploy Spoke Networking for PR
@@ -253,7 +253,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep
+        az deployment group create --resource-group $(ResourceGroupName) --template-file infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.bicep --parameters @infra-as-code/bicep/modules/spokeNetworking/spokeNetworking.parameters.example.json
 
 - job: bicep_cleanup
   dependsOn: bicep_deploy
