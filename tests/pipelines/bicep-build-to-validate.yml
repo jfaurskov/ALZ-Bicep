@@ -4,7 +4,6 @@ trigger:
   branches:
     include:
       - main
-      - PBI95062
   paths:
     include:
       - "**.bicep"
@@ -32,23 +31,6 @@ jobs:
   pool: #ALZ-Bicep
     vmImage: ubuntu-latest
   steps:
-  # - task: Bash@3
-  #   displayName: Install relevant software on self-hosted runner
-  #   name: install_sw
-  #   inputs:
-  #     targetType: 'inline'
-  #     script: |
-  #       curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
-  #       # Mark it as executable
-  #       chmod +x ./bicep
-  #       # Add bicep to your PATH (requires admin)
-  #       sudo mv ./bicep /usr/local/bin/bicep
-  #       # Verify you can now access the 'bicep' command
-  #       bicep --help
-  #       curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-  #       # sudo apt-get -y install jq
-  #       # ls -l /usr/bin/jq
-
   - task: PowerShell@2
     displayName: Bicep Build to Test for PR
     inputs:
@@ -226,7 +208,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json parTopLevelManagementGroupPrefix=$(ManagementGroupPrefix) parLogAnalyticsWorkSpaceAndAutomationAccountLocation=$(Location) parLogAnalyticsWorkspaceResourceID="/subscriptions/$(SUBIDOUTPUT)/resourceGroups/alz-logging/providers/Microsoft.OperationalInsights/workspaces/alz-log-analytics" parDdosProtectionPlanId="/subscriptions/$(SUBIDOUTPUT)/resourceGroups/Hub_Networking_POC/providers/Microsoft.Network/ddosProtectionPlans/alz-Ddos-Plan" --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
+        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json parTopLevelManagementGroupPrefix=$(ManagementGroupPrefix) parLogAnalyticsWorkSpaceAndAutomationAccountLocation=$(Location) parLogAnalyticsWorkspaceResourceID="/subscriptions/$(SUBIDOUTPUT)/resourceGroups/$(ResourceGroupName)/providers/Microsoft.OperationalInsights/workspaces/alz-log-analytics" parDdosProtectionPlanId="/subscriptions/$(SUBIDOUTPUT)/resourceGroups/$(ResourceGroupName)/providers/Microsoft.Network/ddosProtectionPlans/alz-Ddos-Plan" --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
 
   - task: Bash@3    
     displayName: Az CLI Subscription Placement for PR
