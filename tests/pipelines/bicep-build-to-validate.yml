@@ -223,18 +223,20 @@ jobs:
         echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 52 Azure Landing Zones"
         echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-52"
 
-  # - task: PowerShell@2
-  #   displayName: Az CLI Remove/Cleanup Deployment
-  #   condition: ne(variables['isDeployed'], '')
-  #   inputs:
-  #     targetType: 'inline'
-  #     script: |
-  #       install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
-  #       install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
-  #       install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
+  - task: PowerShell@2
+    displayName: Az CLI Remove/Cleanup Deployment
+    condition: ne(variables['isDeployed'], '')
+    inputs:
+      targetType: 'inline'
+      script: |
+        #install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
+        #install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
+        install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
   #       .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
 
   - task: AzurePowerShell@5
+    displayName: Az CLI Remove/Cleanup Deployment
+    condition: ne(variables['isDeployed'], '')
     inputs:
       azureSubscription: 'bicepkeyvault'
       ScriptType: 'FilePath'
