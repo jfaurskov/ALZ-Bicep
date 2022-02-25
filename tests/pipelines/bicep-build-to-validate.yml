@@ -234,7 +234,7 @@ jobs:
   - task: PowerShell@2
     displayName: Az CLI Remove/Cleanup Deployment
     condition: ne(variables['SUBIDOUTPUT'], '')
-      inputs:
+    inputs:
       targetType: 'inline'
       script: |
         install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
