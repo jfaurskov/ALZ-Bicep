@@ -1,4 +1,3 @@
-
 trigger:
   batch: true
   branches:
@@ -7,10 +6,6 @@ trigger:
   paths:
     include:
       - "**.bicep"
-  # pr:
-  # branches:
-  #   include:
-  #   - main
 
 variables:
   - group: csu-bicep-environment
@@ -108,10 +103,6 @@ jobs:
         echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 52 Azure Landing Zones"
         echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-52"
         echo "##vso[task.setvariable variable=gitManagementOUTPUT]something"
-        echo "##vso[task.setvariable variable=gitLoggingOUTPUT]something"
-        echo "##vso[task.setvariable variable=gitSpokeOUTPUT]something"
-        echo "##vso[task.setvariable variable=gitHubOUTPUT]something"
-
 
   - task: Bash@3
     displayName: Login to Azure
@@ -240,14 +231,14 @@ jobs:
       script: |
         az login --service-principal --username $(azclilogin) --password $(azclipwd) --tenant $(azclitenant)
 
-  # - task: PowerShell@2
-  #   displayName: Az CLI Remove/Cleanup Deployment
-  #   #  if: needs.bicep_deploy.outputs.isDeployed
-  #   inputs:
-  #     targetType: 'inline'
-  #     script: |
-  #       install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
-  #       install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
-  #       install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
-  #       .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
+  - task: PowerShell@2
+    displayName: Az CLI Remove/Cleanup Deployment
+    condition: ne(variables['SUBIDOUTPUT'], '')
+      inputs:
+      targetType: 'inline'
+      script: |
+        install-module -Name "Az.Accounts" -MinimumVersion "2.5.2" -Force
+        install-module -Name "Az.Resources" -MinimumVersion "4.3.0" -Force
+        install-module -Name "Az.ResourceGraph" -MinimumVersion "0.7.7"-Force
+        .github/scripts/Wipe-ESLZAzTenant.ps1 -tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"
 
