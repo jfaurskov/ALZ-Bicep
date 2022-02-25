@@ -22,13 +22,11 @@ variables:
     value: "PR $(System.PullRequest.PullRequestId) Azure Landing Zones"
   - name: SubscriptionName
     value: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
-  - name: Location
-    value: "germanywestcentral"
 
 jobs:
 - job: bicep_unit_tests
   displayName: Test Bicep Files for PR
-  pool: #ALZ-Bicep
+  pool: 
     vmImage: ubuntu-latest
   steps:
   - task: PowerShell@2
@@ -50,19 +48,10 @@ jobs:
                 }
 
 - job: bicep_deploy
-  #dependsOn: bicep_unit_tests
   displayName: Deploy Bicep Files for PR
-  pool: #ALZ-Bicep
+  pool: 
     vmImage: ubuntu-latest
   steps:
-  # - task: Bash@3
-  #   displayName: Install relevant software on self-hosted runner
-  #   name: install_sw
-  #   inputs:
-  #     targetType: 'inline'
-  #     script: |
-  #       sudo apt-get -y install jq
-        
   - task: Bash@3
     displayName: Check for managementGroup Changes
     name: git_management_diff
@@ -155,7 +144,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Create Resource Group for PR
     name: create_rsg
-    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -168,7 +157,7 @@ jobs:
   - task: Bash@3     
     displayName: Az CLI Deploy Management Groups for PR
     name: create_mgs
-    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -177,7 +166,7 @@ jobs:
   - task: Bash@3  
     displayName: Az CLI Deploy Custom Role Definitions for PR
     name: create_rbac_roles
-    condition: ne(variables['gitManagementOUTPUT'], '')
+    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -186,7 +175,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Custom Policy Definitions for PR
     name: create_policy_defs
-    condition: ne(variables['gitManagementOUTPUT'], '')
+    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -195,7 +184,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Logging for PR
     name: create_logging
-    condition: ne(variables['gitLoggingOUTPUT'], '')
+    condition: and(ne(variables['gitLoggingOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -204,7 +193,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Policy Assignment DINE for PR
     name: create_policy_assignment_dine
-    condition: ne(variables['gitManagementOUTPUT'], '')
+    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -213,7 +202,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Subscription Placement for PR
     name: move_sub
-    condition: or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -222,7 +211,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
     name: create_hub_network
-    condition: ne(variables['gitHubOUTPUT'], '')
+    condition: and(ne(variables['gitHubOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -231,7 +220,7 @@ jobs:
   - task: Bash@3              
     displayName: Az CLI Deploy Spoke Networking for PR
     name: create_spoke_network
-    condition: ne(variables['gitSpokeOUTPUT'], '')
+    condition: and(ne(variables['gitSpokeOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -240,9 +229,8 @@ jobs:
 - job: bicep_cleanup
   dependsOn: bicep_deploy
   displayName: Cleanup Bicep Deployment for PR
-  pool: #ALZ-Bicep
+  pool: 
     vmImage: ubuntu-latest
-  #environment: BicepUnitTests
   steps:
   - task: Bash@3
     displayName: Login to Azure
