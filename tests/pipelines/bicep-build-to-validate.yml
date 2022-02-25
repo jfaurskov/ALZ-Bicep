@@ -211,6 +211,17 @@ jobs:
       targetType: 'inline'
       script: |
         az login --service-principal --username $(azclilogin) --password $(azclipwd) --tenant $(azclitenant)
+  
+  - task: Bash@3
+    displayName: INTERIM DELETE BEFORE PROD
+    name: git_hardcode_variables
+    inputs:
+      targetType: 'inline'
+      script: |
+        echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-52"
+        echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-52"
+        echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 52 Azure Landing Zones"
+        echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-52"
 
   - task: PowerShell@2
     displayName: Az CLI Remove/Cleanup Deployment
