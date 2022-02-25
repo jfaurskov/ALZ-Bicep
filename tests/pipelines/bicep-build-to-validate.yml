@@ -1,11 +1,6 @@
+name: "ALZ-Bicep unit tests"
+
 trigger: none
-  # batch: true
-  # branches:
-  #   include:
-  #     - main
-  # paths:
-  #   include:
-  #     - "**.bicep"
 
 variables:
   - group: csu-bicep-environment
@@ -70,17 +65,6 @@ jobs:
         echo "##vso[task.setvariable variable=gitSpokeOUTPUT]$git_spoke"
 
   - task: Bash@3
-    displayName: INTERIM DELETE BEFORE PROD
-    name: git_hardcode_variables
-    inputs:
-      targetType: 'inline'
-      script: |
-        echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-52"
-        echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-52"
-        echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 52 Azure Landing Zones"
-        echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-52"
-
-  - task: Bash@3
     displayName: Login to Azure
     name: git_azlogin
     inputs:
@@ -99,7 +83,6 @@ jobs:
         echo $subId
         echo "##vso[task.setvariable variable=subscriptionId]$subid"
         echo "##vso[task.setvariable variable=IsDeployed;isoutput=true]$subid"
-        
 
   - task: Bash@3
     displayName: Az CLI Refresh subscription list
@@ -211,17 +194,6 @@ jobs:
       script: |
         az login --service-principal --username $(azclilogin) --password $(azclipwd) --tenant $(azclitenant)
   
-  - task: Bash@3
-    displayName: INTERIM DELETE BEFORE PROD
-    name: git_hardcode_variables
-    inputs:
-      targetType: 'inline'
-      script: |
-        echo "##vso[task.setvariable variable=ResourceGroupName]rsg-github-pr-52"
-        echo "##vso[task.setvariable variable=ManagementGroupPrefix]PR-52"
-        echo "##vso[task.setvariable variable=TopLevelManagementGroupDisplayName]PR 52 Azure Landing Zones"
-        echo "##vso[task.setvariable variable=SubscriptionName]sub-unit-test-pr-52"
-
   - task: PowerShell@2
     displayName: Az CLI Remove/Cleanup Deployment
     condition: ne(variables['isDeployed'], '')
