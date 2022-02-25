@@ -99,6 +99,7 @@ jobs:
         subid=$(az deployment tenant create --name "deploy-$(SubscriptionName)" --location $(Location) --template-file infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.bicep --parameters @infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.parameters.example.json --parameters parSubscriptionBillingScope=$(ALZ-AZURE-SECRET-EA-BILLING-ACCOUNT) parSubscriptionName=$(SubscriptionName) | jq .properties.outputs.outSubscriptionId.value)
         echo $subId
         echo "##vso[task.setvariable variable=subscriptionId]$subid"
+        echo "##vso[task.setvariable variable=IsDeployed;isoutput=true]$subid"
         
 
   - task: Bash@3
@@ -197,6 +198,8 @@ jobs:
 
 - job: bicep_cleanup
   dependsOn: bicep_deploy
+  variables:
+    isDeployed: $[ dependencies.bicep_deploy.outputs['create_subscription.IsDeployed'] ]  
   displayName: Cleanup Bicep Deployment for PR
   pool: 
     vmImage: ubuntu-latest
@@ -211,7 +214,7 @@ jobs:
 
   - task: PowerShell@2
     displayName: Az CLI Remove/Cleanup Deployment
-    condition: ne(variables['subscriptionId'], '')
+    condition: ne(variables['isDeployed'], '')
     inputs:
       targetType: 'inline'
       script: |
