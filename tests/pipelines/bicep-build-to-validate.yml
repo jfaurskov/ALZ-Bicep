@@ -1,11 +1,11 @@
-trigger:
-  batch: true
-  branches:
-    include:
-      - main
-  paths:
-    include:
-      - "**.bicep"
+trigger: none
+  # batch: true
+  # branches:
+  #   include:
+  #     - main
+  # paths:
+  #   include:
+  #     - "**.bicep"
 
 variables:
   - group: csu-bicep-environment
@@ -234,7 +234,7 @@ jobs:
     displayName: Az CLI Remove/Cleanup Deployment
     condition: ne(variables['isDeployed'], '')
     inputs:
-      azureSubscription: ${{ variables['serviceconnection'] }}
+      azureSubscription: ${{ variables.serviceconnection }}
       ScriptType: 'FilePath'
       ScriptPath: '.github/scripts/Wipe-ESLZAzTenant.ps1'
       ScriptArguments: '-tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"'
