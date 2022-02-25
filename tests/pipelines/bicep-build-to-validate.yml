@@ -19,29 +19,6 @@ variables:
     value: "sub-unit-test-pr-$(System.PullRequest.PullRequestId)"
 
 jobs:
-- job: bicep_unit_tests
-  displayName: Test Bicep Files for PR
-  pool: 
-    vmImage: ubuntu-latest
-  steps:
-  - task: PowerShell@2
-    displayName: Bicep Build to Test for PR
-    inputs:
-      targetType: 'inline'
-      script: |
-          Get-ChildItem -Recurse -Filter '*.bicep' -Exclude 'callModuleFromACR.example.bicep','orch-hubSpoke.bicep' | ForEach-Object {
-            Write-Information "==> Attempting Bicep Build For File: $_" -InformationAction Continue
-              $output = bicep build $_.FullName 2>&1
-                if ($LastExitCode -ne 0)
-                  {
-                    throw $output
-                  }
-                Else
-                  {
-                    echo $output
-                  }   
-                }
-
 - job: bicep_deploy
   displayName: Deploy Bicep Files for PR
   pool: 
@@ -121,12 +98,13 @@ jobs:
       script: |
         subid=$(az deployment tenant create --name "deploy-$(SubscriptionName)" --location $(Location) --template-file infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.bicep --parameters @infra-as-code/bicep/CRML/subscriptionAlias/subscriptionAlias.parameters.example.json --parameters parSubscriptionBillingScope=$(ALZ-AZURE-SECRET-EA-BILLING-ACCOUNT) parSubscriptionName=$(SubscriptionName) | jq .properties.outputs.outSubscriptionId.value)
         echo $subId
-        echo "##vso[task.setvariable variable=SUBIDOUTPUT]$subid"
+        echo "##vso[task.setvariable variable=subscriptionId]$subid"
+        
 
   - task: Bash@3
     displayName: Az CLI Refresh subscription list
     name: refresh_subscription
-    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -135,11 +113,11 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Create Resource Group for PR
     name: create_rsg
-    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
-        az account set --subscription $(SUBIDOUTPUT)
+        az account set --subscription $(subscriptionId)
         if [ $(az group exists --name $(ResourceGroupName) ) == false ]; then
             sleep 300
         fi
@@ -148,7 +126,7 @@ jobs:
   - task: Bash@3     
     displayName: Az CLI Deploy Management Groups for PR
     name: create_mgs
-    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -157,7 +135,7 @@ jobs:
   - task: Bash@3  
     displayName: Az CLI Deploy Custom Role Definitions for PR
     name: create_rbac_roles
-    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -166,7 +144,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Custom Policy Definitions for PR
     name: create_policy_defs
-    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -175,7 +153,7 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Deploy Logging for PR
     name: create_logging
-    condition: and(ne(variables['gitLoggingOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(ne(variables['gitLoggingOUTPUT'], ''), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -184,25 +162,25 @@ jobs:
   - task: Bash@3    
     displayName: Az CLI Policy Assignment DINE for PR
     name: create_policy_assignment_dine
-    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(ne(variables['gitManagementOUTPUT'], ''), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json parTopLevelManagementGroupPrefix=$(ManagementGroupPrefix) parLogAnalyticsWorkSpaceAndAutomationAccountLocation=$(Location) parLogAnalyticsWorkspaceResourceID="/subscriptions/$(SUBIDOUTPUT)/resourceGroups/$(ResourceGroupName)/providers/Microsoft.OperationalInsights/workspaces/alz-log-analytics" parDdosProtectionPlanId="/subscriptions/$(SUBIDOUTPUT)/resourceGroups/$(ResourceGroupName)/providers/Microsoft.Network/ddosProtectionPlans/alz-Ddos-Plan" --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
+        az deployment mg create --template-file infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.bicep --parameters @infra-as-code/bicep/modules/policy/assignments/alzDefaults/alzDefaultPolicyAssignments.parameters.example.json parTopLevelManagementGroupPrefix=$(ManagementGroupPrefix) parLogAnalyticsWorkSpaceAndAutomationAccountLocation=$(Location) parLogAnalyticsWorkspaceResourceID="/subscriptions/$(subscriptionId)/resourceGroups/$(ResourceGroupName)/providers/Microsoft.OperationalInsights/workspaces/alz-log-analytics" parDdosProtectionPlanId="/subscriptions/$(subscriptionId)/resourceGroups/$(ResourceGroupName)/providers/Microsoft.Network/ddosProtectionPlans/alz-Ddos-Plan" --location $(Location) --management-group-id "$(ManagementGroupPrefix)-platform"
 
   - task: Bash@3    
     displayName: Az CLI Subscription Placement for PR
     name: move_sub
-    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(or(ne(variables['gitManagementOUTPUT'], ''), ne(variables['gitLoggingOUTPUT'], ''), ne(variables['gitSpokeOUTPUT'], ''), ne(variables['gitHubOUTPUT'], '')), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
-        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters @infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.parameters.example.json parTargetManagementGroupId=$(ManagementGroupPrefix)-platform-connectivity parSubscriptionIds='[$(SUBIDOUTPUT)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
+        az deployment mg create --template-file infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.bicep --parameters @infra-as-code/bicep/modules/subscriptionPlacement/subscriptionPlacement.parameters.example.json parTargetManagementGroupId=$(ManagementGroupPrefix)-platform-connectivity parSubscriptionIds='[$(subscriptionId)]' --location $(Location) --management-group-id $(ManagementGroupPrefix)
 
   - task: Bash@3    
     displayName: Az CLI Deploy Hub Networking for PR
     name: create_hub_network
-    condition: and(ne(variables['gitHubOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(ne(variables['gitHubOUTPUT'], ''), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -211,7 +189,7 @@ jobs:
   - task: Bash@3              
     displayName: Az CLI Deploy Spoke Networking for PR
     name: create_spoke_network
-    condition: and(ne(variables['gitSpokeOUTPUT'], ''), ne(variables['SUBIDOUTPUT'], ''))
+    condition: and(ne(variables['gitSpokeOUTPUT'], ''), ne(variables['subscriptionId'], ''))
     inputs:
       targetType: 'inline'
       script: |
@@ -233,7 +211,7 @@ jobs:
 
   - task: PowerShell@2
     displayName: Az CLI Remove/Cleanup Deployment
-    condition: ne(variables['SUBIDOUTPUT'], '')
+    condition: ne(variables['subscriptionId'], '')
     inputs:
       targetType: 'inline'
       script: |
