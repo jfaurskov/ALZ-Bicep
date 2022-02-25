@@ -234,7 +234,7 @@ jobs:
     displayName: Az CLI Remove/Cleanup Deployment
     condition: ne(variables['isDeployed'], '')
     inputs:
-      connectedServiceNameARM: ${{ variables.serviceconnection }}
+      azureSubscription: 'azserviceconnection'
       ScriptType: 'FilePath'
       ScriptPath: '.github/scripts/Wipe-ESLZAzTenant.ps1'
       ScriptArguments: '-tenantRootGroupID $(azclitenant) -intermediateRootGroupID "$(ManagementGroupPrefix)" -subscriptionName "$(SubscriptionName)"'
