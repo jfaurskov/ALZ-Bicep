@@ -1,0 +1,9 @@
+Github webhook Body
+"number": is most likely pr number
+"pull_request"
+	"url": "https://api.github.com/repos/jfaurskov/adointegration/pulls/1"
+	"state": "closed"
+	"merged_at": Null if not merged, 2022-05-03T12:04:25Z" if meged
+
+
+	Unlikely to be used, requires auth etc...
