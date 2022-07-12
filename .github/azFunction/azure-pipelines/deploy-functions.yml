@@ -1,10 +1,4 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
-trigger:
-- cancelsubfunction
+trigger: none
 
 variables:
  - group: csu-bicep-environment
@@ -33,12 +27,12 @@ steps:
     overrideParameters: '-functionAppName $(cancelsubfunctionname)'
     deploymentMode: 'Incremental'
 
-
-- task: AzureFunctionApp@1 # Add this at the end of your file
+- task: AzureFunctionApp@1 
   displayName: "Deploy Functions to base"
   inputs:
     azureSubscription: 'azserviceconnection'
-    appType: functionAppLinux # default is functionApp
+    appType: functionAppLinux 
     appName: $(cancelsubfunctionname)
     package: $(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip
+
 
