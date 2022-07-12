@@ -22,6 +22,9 @@ If ($subscription) {
                 Body = $body
             })
     }
+    Else {
+    Write-Host "Subscription $subscriptionName is already canceled"
+    }
 }
 Else {
     Write-Host "Could not find subscription $subscriptionName"
