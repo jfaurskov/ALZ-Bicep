@@ -4,12 +4,10 @@
 # https://aka.ms/yaml
 
 trigger:
-- main
+- cancelsubfunction
 
 variables:
-  # Azure service connection established during pipeline creation
-  azureSubscription: cancelfunctiontest
-  appName: cancelsubjfa
+ - group: csu-bicep-environment
 
 pool:
   vmImage: ubuntu-latest
@@ -18,7 +16,7 @@ steps:
 - task: ArchiveFiles@2
   displayName: "Archive files"
   inputs:
-    rootFolderOrFile: "$(System.DefaultWorkingDirectory)/AzFunctionCode"
+    rootFolderOrFile: "$(System.DefaultWorkingDirectory)/.github/azFunction/AzFunctionCode"
     includeRootFolder: false
     archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
 
@@ -26,22 +24,21 @@ steps:
   displayName: "Deploy Base Azure Function"
   inputs:
     deploymentScope: 'Resource Group'
-    azureResourceManagerConnection: 'cancelfunctiontest'
-    #subscriptionId: 'e1b5b379-5c46-4f7f-80c0-9fb5203beba0'
+    azureResourceManagerConnection: 'azserviceconnection'
     action: 'Create Or Update Resource Group'
-    resourceGroupName: 'cancelsub'
-    location: 'Norway East'
+    resourceGroupName: 'cancelsubscription'
+    location:  $(Location)
     templateLocation: 'Linked artifact'
-    csmFile: './AzFunctionInfrastructure/main.bicep'
-    overrideParameters: '-functionAppName $(appName)'
+    csmFile: './.github/azFunction/AzFunctionInfrastructure/main.bicep'
+    overrideParameters: '-functionAppName $(cancelsubfunctionname)'
     deploymentMode: 'Incremental'
 
 
 - task: AzureFunctionApp@1 # Add this at the end of your file
   displayName: "Deploy Functions to base"
   inputs:
-    azureSubscription: cancelfunctiontest
+    azureSubscription: 'azserviceconnection'
     appType: functionAppLinux # default is functionApp
-    appName: $(appName)
+    appName: $(cancelsubfunctionname)
     package: $(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip
 
