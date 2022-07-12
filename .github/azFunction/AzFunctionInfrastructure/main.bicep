@@ -171,71 +171,71 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   }
 }
 
-resource functionApp_authsettingsV2 'Microsoft.Web/sites/config@2021-02-01' = {
-  parent: functionApp
-  name: 'authsettingsV2'
-  location: location
-  properties: {
-    platform: {
-      enabled: true
-      runtimeVersion: '~1'
-    }
-    globalValidation: {
-      requireAuthentication: true
-      unauthenticatedClientAction: 'RedirectToLoginPage'
-      redirectToProvider: 'azureactivedirectory'
-    }
-    identityProviders: {
-      // azureActiveDirectory: {
-      //   enabled: true
-      //   registration: {
-      //     openIdIssuer: 'https://sts.windows.net/${tenant().tenantId}/v2.0'
-      //     clientId: clientId
-      //     clientSecretSettingName: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
-      //   }
-      //   login: {
-      //     disableWWWAuthenticate: false
-      //   }
-      //   validation: {
-      //     jwtClaimChecks: {}
-      //     allowedAudiences: [
-      //     'https://management.core.windows.net/'
-      //     ]
-      //     defaultAuthorizationPolicy: {
-      //       allowedPrincipals: {}
-      //     }
-      //   }
-      // }
-    }
-    login: {
-      routes: {}
-      tokenStore: {
-        enabled: true
-        tokenRefreshExtensionHours: 72
-        fileSystem: {}
-        azureBlobStorage: {}
-      }
-      preserveUrlFragmentsForLogins: false
-      cookieExpiration: {
-        convention: 'FixedTime'
-        timeToExpiration: '08:00:00'
-      }
-      nonce: {
-        validateNonce: true
-        nonceExpirationInterval: '00:05:00'
-      }
-    }
-    httpSettings: {
-      requireHttps: true
-      routes: {
-        apiPrefix: '/.auth'
-      }
-      forwardProxy: {
-        convention: 'NoProxy'
-      }
-    }
-  }
-}
+// resource functionApp_authsettingsV2 'Microsoft.Web/sites/config@2021-02-01' = {
+//   parent: functionApp
+//   name: 'authsettingsV2'
+//   location: location
+//   properties: {
+//     platform: {
+//       enabled: true
+//       runtimeVersion: '~1'
+//     }
+//     globalValidation: {
+//       requireAuthentication: true
+//       unauthenticatedClientAction: 'RedirectToLoginPage'
+//       redirectToProvider: 'azureactivedirectory'
+//     }
+//     identityProviders: {
+//       // azureActiveDirectory: {
+//       //   enabled: true
+//       //   registration: {
+//       //     openIdIssuer: 'https://sts.windows.net/${tenant().tenantId}/v2.0'
+//       //     clientId: clientId
+//       //     clientSecretSettingName: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
+//       //   }
+//       //   login: {
+//       //     disableWWWAuthenticate: false
+//       //   }
+//       //   validation: {
+//       //     jwtClaimChecks: {}
+//       //     allowedAudiences: [
+//       //     'https://management.core.windows.net/'
+//       //     ]
+//       //     defaultAuthorizationPolicy: {
+//       //       allowedPrincipals: {}
+//       //     }
+//       //   }
+//       // }
+//     }
+//     login: {
+//       routes: {}
+//       tokenStore: {
+//         enabled: true
+//         tokenRefreshExtensionHours: 72
+//         fileSystem: {}
+//         azureBlobStorage: {}
+//       }
+//       preserveUrlFragmentsForLogins: false
+//       cookieExpiration: {
+//         convention: 'FixedTime'
+//         timeToExpiration: '08:00:00'
+//       }
+//       nonce: {
+//         validateNonce: true
+//         nonceExpirationInterval: '00:05:00'
+//       }
+//     }
+//     httpSettings: {
+//       requireHttps: true
+//       routes: {
+//         apiPrefix: '/.auth'
+//       }
+//       forwardProxy: {
+//         convention: 'NoProxy'
+//       }
+//     }
+//   }
+// }
 
 
 //Add role assignment reader at Tenant root group level
