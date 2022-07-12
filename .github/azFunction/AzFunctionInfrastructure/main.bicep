@@ -18,8 +18,11 @@ param storageSku string = 'Standard_LRS'
 
 var functionRuntime = 'powerShell'
 //Pull vars from key vault instead and/or add as parameters
+// Put in central key vault
 var clientId = '5897cd85-bf88-4673-8bc9-f2f06d526be8'
+// Put in central key vault if not already there
 var adoServiceConnectionObjId = '9e618eed-1133-415d-8f93-360bbed90d90'
+//Get as output from deploying function app
 var functionManagedIdentityObjId = 'd2f4e36d-a152-4c9c-9276-6a3e051c0d06'
 var keyVaultName = 'kv${uniqueString(resourceGroup().id)}'
 
@@ -84,20 +87,22 @@ resource kv 'Microsoft.KeyVault/vaults@2021-06-01-preview' = {
     enabledForTemplateDeployment: false
     enableSoftDelete: false
     accessPolicies: [
+      // {
+      //   tenantId: subscription().tenantId
+      //   objectId: adoServiceConnectionObjId
+      //   'permissions': {
+      //     keys: []
+      //     secrets: [
+      //       'all'
+      //     ]
+      //     certificates: []
+      //   }
+      // }
+
+      //fixme get managedidentity from deployment
       {
         tenantId: subscription().tenantId
-        objectId: adoServiceConnectionObjId
-        'permissions': {
-          keys: []
-          secrets: [
-            'all'
-          ]
-          certificates: []
-        }
-      }
-      {
-        tenantId: subscription().tenantId
-        objectId: functionManagedIdentityObjId
+        objectId: functionApp.identity.principalId
         permissions: {
           keys: []
           secrets: [
@@ -148,10 +153,10 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
           value: appInsights.properties.InstrumentationKey
         }
-        {
-          name: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
-          value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=clientsecret)'
-        }
+        // {
+        //   name: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
+        //   value: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=clientsecret)'
+        // }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
           value: functionRuntime
@@ -181,26 +186,26 @@ resource functionApp_authsettingsV2 'Microsoft.Web/sites/config@2021-02-01' = {
       redirectToProvider: 'azureactivedirectory'
     }
     identityProviders: {
-      azureActiveDirectory: {
-        enabled: true
-        registration: {
-          openIdIssuer: 'https://sts.windows.net/${tenant().tenantId}/v2.0'
-          clientId: clientId
-          clientSecretSettingName: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
-        }
-        login: {
-          disableWWWAuthenticate: false
-        }
-        validation: {
-          jwtClaimChecks: {}
-          allowedAudiences: [
-          'https://management.core.windows.net/'
-          ]
-          defaultAuthorizationPolicy: {
-            allowedPrincipals: {}
-          }
-        }
-      }
+      // azureActiveDirectory: {
+      //   enabled: true
+      //   registration: {
+      //     openIdIssuer: 'https://sts.windows.net/${tenant().tenantId}/v2.0'
+      //     clientId: clientId
+      //     clientSecretSettingName: 'MICROSOFT_PROVIDER_AUTHENTICATION_SECRET'
+      //   }
+      //   login: {
+      //     disableWWWAuthenticate: false
+      //   }
+      //   validation: {
+      //     jwtClaimChecks: {}
+      //     allowedAudiences: [
+      //     'https://management.core.windows.net/'
+      //     ]
+      //     defaultAuthorizationPolicy: {
+      //       allowedPrincipals: {}
+      //     }
+      //   }
+      // }
     }
     login: {
       routes: {}
