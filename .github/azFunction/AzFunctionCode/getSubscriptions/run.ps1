@@ -16,6 +16,7 @@ If ($subscription) {
     If ($subscriptionState -eq "Enabled") {
         $body = @{
             subscriptionId = $subscriptionId
+            subscriptionName = $subscriptionName
         } 
         Push-OutputBinding -Name subscriptionsToClose -Value ([HttpResponseContext]@{
                 Body = $body
